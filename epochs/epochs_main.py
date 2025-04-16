@@ -12,8 +12,9 @@ import base.base_constants as b_cs
 
 
 
-for g_n in b_cs.G_O_ica[1:]:
-    for cond in cs.condition[1]:
+for g_n in b_cs.G_N[:1]:
+
+    for cond in cs.condition[0]:
         files=files_in_out.GetFiles(filepath=cs.datafolder,eeg_format=cs.eeg_format,g_num=g_n)
         files.select_condition(cond)
         #fif_taskfiles=files.condition_files
@@ -22,13 +23,12 @@ for g_n in b_cs.G_O_ica[1:]:
         #epochs.get_eog_epochs(thresh=None)
         #epochs.get_exp_epochs()
         #epochs.get_ecg_epochs()
-        epochs.run_infoICA()
+        #epochs.run_infoICA()
         #epochs.run_fastICA()
         
         #epochs.save_epochs()
 
-        # try:
-        #     epochs.select_ICA_components()
+        epochs.select_ICA_components()
         #
         # except:
         #     if epochs.isica():

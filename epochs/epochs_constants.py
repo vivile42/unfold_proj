@@ -15,7 +15,7 @@ platform.system()
 # define starting datafolder 
 
 if platform.system()=='Darwin':
-    os.chdir('/Users/leupinv/switchdrive/BBC/WP1/data/EEG/tsk/')
+    os.chdir('/Volumes/BBC/BBC/WP1/data/EEG/tsk')
     base_datafolder='/Volumes/Elements/'
 else:
     os.chdir('Z:/BBC/WP1/data/EEG/tsk')
