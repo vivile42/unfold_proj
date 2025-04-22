@@ -30,7 +30,7 @@ class Epoch_HP():
         self.raw=mne.io.read_raw_fif(self.files.current_file_dir,preload=True)
         #self.get_bad_interval()
         self.events_from_annot, self.event_dict = mne.events_from_annotations(self.raw)
-        self.init_report()
+        #self.init_report()
         self.exp_type=files_in_out.find_eeg_exp(self.files.current_file_dir)
         print(self.exp_type)
         #self.run_ICA()
@@ -107,8 +107,12 @@ class Epoch_HP():
 
 
     def select_ICA_components(self):
+        self.files.current_filename=self.files.current_filename[:9]
         self.read_ICA()
         self.read_ICA_log()
+
+        self.read_eog_epochs()
+        self.read_ecg_epochs()
 
         #plot components to exclude
         arg=dict(vmax=2,vmin=-2)
@@ -129,14 +133,27 @@ class Epoch_HP():
 
         self.ica.apply(self.raw_rec)
 
-
+        self.raw_rec.apply_proj()
         self.save_raw_ICA()
+
+    def read_eog_epochs(self):
+        type_sig='epochs'
+        file_end='eog_epo.fif'
+        output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end)
+        self.eog_epochs=mne.read_epochs(output_filename)
+
+    def read_ecg_epochs(self):
+        type_sig='epochs'
+        file_end='ecg_epo.fif'
+        output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end)
+        self.ecg_epochs=mne.read_epochs(output_filename)
 
     def save_raw_ICA(self):
         type_sig='raw'
-        file_end='ICA_rec-raw.fif'
-        output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end)
+        file_end='_ICA_rec-raw.fif'
+        output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end,loc_folder='raw')
         print(output_filename)
+        self.raw_rec.save(output_filename,overwrite=True)
     def save_epoch_ICA(self):
         type_sig='epochs'
         file_end='nc_rec_epo.fif'
@@ -268,7 +285,7 @@ class Epoch_HP():
          self.raw.annotations.append(onset, duration, description)
 
          eog_fig=self.eog_epochs.average().plot_joint()
-         self.report.add_figure(eog_fig,title='blinks',caption=f'number of blinks:{n_blink} and of bad blinks:{n_blinks}\n')
+         #self.report.add_figure(eog_fig,title='blinks',caption=f'number of blinks:{n_blink} and of bad blinks:{n_blinks}\n')
 
 
     def get_exp_epochs(self):
@@ -307,13 +324,13 @@ class Epoch_HP():
          fig_drop_log=self.epochs_exp.plot_drop_log()
          psd_fig=self.epochs_exp.plot_psd()
 
-         self.report.add_figure([fig_drop_log,psd_fig],
-                           title=['Dropped Epochs','PSD Epoched'])
+         #self.report.add_figure([fig_drop_log,psd_fig],
+                           #title=['Dropped Epochs','PSD Epoched'])
 
     def get_ecg_epochs(self):
         self.ecg_epochs=mne.preprocessing.create_ecg_epochs(self.raw)
         ecg_fig=self.ecg_epochs.average().plot_joint()
-        self.report.add_figure(ecg_fig,title='heartbeats')
+        #self.report.add_figure(ecg_fig,title='heartbeats')
 
     def save_epochs(self):
         type_sig='epochs'

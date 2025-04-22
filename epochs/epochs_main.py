@@ -12,7 +12,7 @@ import base.base_constants as b_cs
 
 
 
-for g_n in b_cs.G_N[:1]:
+for g_n in b_cs.G_N[3:4]:
 
     for cond in cs.condition[0]:
         files=files_in_out.GetFiles(filepath=cs.datafolder,eeg_format=cs.eeg_format,g_num=g_n)
@@ -53,5 +53,7 @@ for g_n in b_cs.G_N[:1]:
 #         epochs=hp.Epoch_HP(files)
 #         epochs.raw.set_annotations(None)
 #         epochs.run_fastICA()
+
+#%%
 
 #%%
