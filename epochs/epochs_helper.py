@@ -28,6 +28,7 @@ class Epoch_HP():
     def __init__(self,files):
         self.files=files
         self.raw=mne.io.read_raw_fif(self.files.current_file_dir,preload=True)
+        print(self.files.current_file_dir)
         #self.get_bad_interval()
         self.events_from_annot, self.event_dict = mne.events_from_annotations(self.raw)
         #self.init_report()
@@ -116,14 +117,28 @@ class Epoch_HP():
 
         #plot components to exclude
         arg=dict(vmax=2,vmin=-2)
-        figs_ecg=self.ica.plot_properties(inst=self.ecg_epochs,picks=self.dict_el['ecg_index'],image_args=arg)
-        figs_eog=self.ica.plot_properties(inst=self.eog_epochs,picks=self.dict_el['eog_index'],image_args=arg)
+        self.figs_art=self.ica.plot_properties(inst=self.ecg_epochs,picks=self.dict_el['artefact_index'],image_args=arg)
+        self.figs_eog=self.ica.plot_properties(inst=self.eog_epochs,picks=self.dict_el['eog_index'],image_args=arg)
 
         #self.report.add_figs_to_section(figs_ecg,
                            #captions=[ f'ECG component -{x+1}' for x,_ in enumerate(figs_ecg)],section='ICA')
         #self.report.add_figs_to_section(figs_eog,
                            #captions=[ f'EOG component -{x+1}' for x,_ in enumerate(figs_eog)],section='ICA')
-        #  get epochs with CFA (eclude EOG + artefacts)
+
+        # save figure with ica eog (to double check)
+        for n,fig in enumerate (self.figs_eog):
+            type_sig='ICA/images'
+            file_end=f'fig_eog_{n}.png'
+            output_figname=self.files.out_filename(type_sig=type_sig,file_end=file_end)
+            print(output_figname)
+            fig.savefig(output_figname)
+        # save figure with ica art (to double check)
+        for n,fig in enumerate (self.figs_art):
+            type_sig='ICA/images'
+            file_end=f'fig_art_{n}.png'
+            output_figname=self.files.out_filename(type_sig=type_sig,file_end=file_end)
+            print(output_figname)
+            fig.savefig(output_figname)
 
         self.ica.exclude.extend(self.dict_el['eog_index']+self.dict_el['artefact_index'])
 
