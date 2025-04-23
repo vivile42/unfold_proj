@@ -5,8 +5,8 @@ Created on Fri Jul  2 10:39:12 2021
 
 @author: leupinv
 """
-import epochs.epochs_helper as hp
-import epochs.epochs_constants as cs
+import raw_ICA.raw_ICA_helper as hp
+import raw_ICA.raw_ICA_constants as cs
 import base.files_in_out as files_in_out
 import base.base_constants as b_cs
 
@@ -20,25 +20,25 @@ for g_n in b_cs.G_N[4:5]:
         #fif_taskfiles=files.condition_files
         files.get_info(end_fix=17)
         epochs=hp.Epoch_HP(files)
-        #epochs.get_eog_epochs(thresh=None)
-        #epochs.get_exp_epochs()
-        #epochs.get_ecg_epochs()
-        #epochs.run_infoICA()
-        #epochs.run_fastICA()
+        #raw_ICA.get_eog_epochs(thresh=None)
+        #raw_ICA.get_exp_epochs()
+        #raw_ICA.get_ecg_epochs()
+        #raw_ICA.run_infoICA()
+        #raw_ICA.run_fastICA()
         
-        #epochs.save_epochs()
+        #raw_ICA.save_epochs()
 
         epochs.select_ICA_components()
         #
         # except:
-        #     if epochs.isica():
+        #     if raw_ICA.isica():
         #         pass
         #     else:
         #
 
         
-        #files_in_out.save_report(files,epochs.report)
-        #files_in_out.save_report(files,epochs.report,final=True)
+        #files_in_out.save_report(files,raw_ICA.report)
+        #files_in_out.save_report(files,raw_ICA.report,final=True)
 
         
 
@@ -50,9 +50,9 @@ for g_n in b_cs.G_N[4:5]:
 #         files.select_condition(cond)
 #         #fif_taskfiles=files.condition_files
 #         files.get_info(end_fix=17)
-#         epochs=hp.Epoch_HP(files)
-#         epochs.raw.set_annotations(None)
-#         epochs.run_fastICA()
+#         raw_ICA=hp.Epoch_HP(files)
+#         raw_ICA.raw.set_annotations(None)
+#         raw_ICA.run_fastICA()
 
 #%%
 

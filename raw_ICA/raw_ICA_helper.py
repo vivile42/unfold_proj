@@ -13,7 +13,7 @@ import mne
 from mne.preprocessing import ICA
 import base.files_in_out as files_in_out
 import feather
-import epochs.epochs_constants as cs
+import raw_ICA.raw_ICA_constants as cs
 
 
 
@@ -152,13 +152,13 @@ class Epoch_HP():
         self.save_raw_ICA()
 
     def read_eog_epochs(self):
-        type_sig='epochs'
+        type_sig='raw_ICA'
         file_end='eog_epo.fif'
         output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end)
         self.eog_epochs=mne.read_epochs(output_filename)
 
     def read_ecg_epochs(self):
-        type_sig='epochs'
+        type_sig='raw_ICA'
         file_end='ecg_epo.fif'
         output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end)
         self.ecg_epochs=mne.read_epochs(output_filename)
@@ -170,7 +170,7 @@ class Epoch_HP():
         print(output_filename)
         self.raw_rec.save(output_filename,overwrite=True)
     def save_epoch_ICA(self):
-        type_sig='epochs'
+        type_sig='raw_ICA'
         file_end='nc_rec_epo.fif'
 
         output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end)
@@ -284,7 +284,7 @@ class Epoch_HP():
 
 
         #save eog log
-         type_sig='epochs'
+         type_sig='raw_ICA'
 
          file_end='eog_log.txt'
          output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end)
@@ -318,7 +318,7 @@ class Epoch_HP():
              tf=pd.Series(TF)
 
 
-         ## define epochs
+         ## define raw_ICA
 
 
 
@@ -348,7 +348,7 @@ class Epoch_HP():
         #self.report.add_figure(ecg_fig,title='heartbeats')
 
     def save_epochs(self):
-        type_sig='epochs'
+        type_sig='raw_ICA'
         file_end='exp_epo.fif'
         output_filename=self.files.out_filename(type_sig=type_sig,file_end=file_end)
 
@@ -360,7 +360,7 @@ class Epoch_HP():
 
             self.eog_epochs.save(output_filename,overwrite=True)
         except:
-            print('no eog epochs were found')
+            print('no eog raw_ICA were found')
 
         try:
             file_end='ecg_epo.fif'
@@ -368,4 +368,4 @@ class Epoch_HP():
 
             self.ecg_epochs.save(output_filename,overwrite=True)
         except:
-            print('no ecg epochs were found')
+            print('no ecg raw_ICA were found')
