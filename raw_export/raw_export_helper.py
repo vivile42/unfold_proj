@@ -26,6 +26,8 @@ def parse_annotations(raw):
         tags = desc.split("/")
         if "bad" in tags[0].lower():
             continue
+        if len(tags)<=1:
+            continue
 
         onset = annotations.onset[i]
         duration = annotations.duration[i]
