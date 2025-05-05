@@ -93,7 +93,7 @@ def get_Ttest_cluster(X,plot_times='peaks',adjacency=None,averages=None,permutat
     n_channels = len(biosemi_montage.ch_names)
     info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=256.,
                                 ch_types='eeg')
-    evok=mne.EvokedArray(data,info,tmin=-0.1)
+    evok=mne.EvokedArray(data,info,tmin=-0.3)
     evok.set_montage(biosemi_montage)
     evok.plot_image(scalings=1,units='T-value',show_names='auto')
 
