@@ -39,14 +39,17 @@ def get_DF_TFCE(evoked,crop_t=False,crop_value=None):
     print(X.shape)
     return X
 
-def plot_from_BF(X,plot_times='peaks',threshold=10,averages=None):
-
+def plot_from_BF(X,plot_times='peaks',threshold=10,averages=None,log_trans=False):
+    mask_thresh= X>threshold
+    if log_trans:
+        X=np.log10(X)
     biosemi_montage = mne.channels.make_standard_montage('biosemi128')
     info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=256.,
                            ch_types='eeg')
     evok=mne.EvokedArray(X,info,tmin=-0.3)
     evok.set_montage(biosemi_montage)
-    mask_thresh= X>threshold
+
+
     evok.plot_image(mask=mask_thresh,scalings=1,units='T-value',show_names='auto')
     evok.plot_topomap(plot_times,outlines='head',scalings=1,units='T-value',average=averages,mask=mask_thresh)
 
