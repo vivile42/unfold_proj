@@ -39,6 +39,17 @@ def get_DF_TFCE(evoked,crop_t=False,crop_value=None):
     print(X.shape)
     return X
 
+def plot_from_BF(X,plot_times='peaks',threshold=10,averages=None):
+
+    biosemi_montage = mne.channels.make_standard_montage('biosemi128')
+    info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=256.,
+                           ch_types='eeg')
+    evok=mne.EvokedArray(X,info,tmin=-0.3)
+    evok.set_montage(biosemi_montage)
+    mask_thresh= X>threshold
+    evok.plot_image(mask=mask_thresh,scalings=1,units='T-value',show_names='auto')
+    evok.plot_topomap(plot_times,outlines='head',scalings=1,units='T-value',average=averages,mask=mask_thresh)
+
 
 def get_Ttest_TFCE(X,plot_times='peaks',adjacency=None,averages=None,permutations=None):
     tfce = dict(start=0, step=.5)
@@ -140,64 +151,3 @@ def clus_Anovas_ana(evoked,effect_label, crop_value=None,g_excl=None,factor_leve
 
     print(data.shape)
 
-    def stat_fun_anov(*args):
-        return f_mway_rm(np.swapaxes(args,1,0),factor_levels=factor_levels,effects=effects,return_pvals=False)[0]
-
-    # Compute Anova
-    F_obs,clusters,clust_p,H0=clu=\
-    spatio_temporal_cluster_test(X,adjacency=adjacency,threshold=TFCE,stat_fun=stat_fun_anov,n_permutations=n_perm)
-    #fvals, pvals = f_mway_rm(data, factor_levels, effects=effects,correction=True)
-
-    #Plot anova
-
-    F_obs_plot=0*np.ones_like(F_obs)
-    for c,p_valu in zip(clusters,clust_p):
-        if p_valu<=p_val:
-            F_obs_plot[c]=F_obs[c]
-    data=F_obs_plot.T
-
-    #data=np.flipud(data)
-
-
-
-        # evoked
-
-    evok=evoked_plot(data,tmin=crop_value[0])
-
-    fig_effect=evok.plot_image(scalings=1,units='F-value',show_names='auto',clim=dict(eeg=[0,None]),cmap='turbo')
-    if png != None:
-        fig_path=f'ana/results_report/images/anovas/{png}'
-        if not os.path.exists(fig_path):
-            os.makedirs(fig_path)
-        file=f'/{png}_{effect_label}_mass.png'
-        filenam=fig_path+file
-        txt_filename=fig_path+f'/{png}_info.txt'
-        caption1=f'{file} : Time-course of {effect_label}, pval ={p_val}\n'
-        with open (txt_filename,'a') as file:
-            file.write(caption1)
-        fig_effect.savefig(filenam,dpi=600)
-    fig_topo=evok.plot_topomap(topo_times,outlines='head',scalings=1,vmin=0,cmap='turbo',units='F-value',average=plot_average)
-    if png != None:
-        fig_path=f'ana/results_report/images/anovas/{png}'
-        if not os.path.exists(fig_path):
-            os.makedirs(fig_path)
-        file=f'/{png}_{effect_label}_topo.png'
-        filenam=fig_path+file
-        txt_filename=fig_path+f'/{png}_info.txt'
-        caption2=f'{file} : Topoplot of {effect_label} on {topo_times}, p val={p_val}\n'
-        with open (txt_filename,'a') as file:
-            file.write(caption2)
-        fig_topo.savefig(filenam,dpi=600,transparent=True)
-
-
-        if report != None:
-
-            # add graphs to report to produce HTML only if label is present
-
-            caption1=f'Time-course of {effect_label} {corr}, pval ={p_val}'
-            caption2=f'Topoplot of {effect_label} on {topo_times} {corr}, p val={p_val}'
-
-            report.add_figure(fig=fig_effect,title=f'Anova {effects_labels[0]} X {effects_labels[1]}:  {effect_label} image ',caption=caption1,image_format='svg')
-            report.add_figure(fig=fig_topo,title=f'Anova {effects_labels[0]} X {effects_labels[1]}:  {effect_label} topoplot ',caption=caption2,image_format='svg')
-
-    return report
