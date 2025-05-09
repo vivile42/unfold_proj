@@ -39,21 +39,6 @@ def get_DF_TFCE(evoked,crop_t=False,crop_value=None):
     print(X.shape)
     return X
 
-def plot_from_BF(X,plot_times='peaks',threshold=10,averages=None,log_trans=False):
-    mask_thresh= X>threshold
-    if log_trans:
-        X=np.log10(X)
-    biosemi_montage = mne.channels.make_standard_montage('biosemi128')
-    info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=256.,
-                           ch_types='eeg')
-    evok=mne.EvokedArray(X,info,tmin=-0.3)
-    evok.set_montage(biosemi_montage)
-
-
-    evok.plot_image(mask=mask_thresh,scalings=1,units='T-value',show_names='auto')
-    evok.plot_topomap(plot_times,outlines='head',scalings=1,units='T-value',average=averages,mask=mask_thresh)
-
-
 def get_Ttest_TFCE(X,plot_times='peaks',adjacency=None,averages=None,permutations=None):
     tfce = dict(start=0, step=.5)
 
@@ -153,4 +138,51 @@ def clus_Anovas_ana(evoked,effect_label, crop_value=None,g_excl=None,factor_leve
         TFCE=f_threshold_mway_rm(n_rep,factor_levels,effects,pvalue=p_val)
 
     print(data.shape)
+
+
+def plot_from_BF(X,plot_times='peaks',threshold=10,averages=None,log_trans=False,start=-0.3):
+    mask_thresh= X>threshold
+    if log_trans:
+        X=np.log10(X)
+    biosemi_montage = mne.channels.make_standard_montage('biosemi128')
+    info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=256.,
+                           ch_types='eeg')
+    evok=mne.EvokedArray(X,info,tmin=start)
+
+    evok.set_montage(biosemi_montage)
+
+
+    fig_evo=evok.plot_image(mask=mask_thresh,scalings=1,units='T-value',show_names='auto',xlim=(-0.2,0.8))
+    #generate topoplot
+    if plot_times != 'peaks':
+        mask_topo = mask_thresh.copy()
+        time = np.linspace(evok.tmin, evok.tmax, mask_topo.shape[1])
+        for plot_t in plot_times:
+            time_idx = np.where(np.logical_and(
+                time > plot_t-averages, time < plot_t+averages))[0]
+            int_sig = mask_topo[:, time_idx]
+            # time filter is set to more than half of times
+            duration_interval=len(np.where((np.logical_and(
+                time > plot_t-averages, time < plot_t+averages)))[0])
+            thresh_time= 1
+            #thresh_time = np.floor(len(np.where((np.logical_and(
+            #    time > plot_t-averages, time < plot_t+averages)))[0])/2)
+            print(
+                f'number of time pointst: {duration_interval}')
+            print(
+                f'length of minimum time points to be significant: {thresh_time}')
+            if thresh_time==1:
+                print('at the moment if only one TF is significant the electrode will be displayed as sig')
+
+            for n, line in enumerate(int_sig):
+                #possible time filter
+                if sum(line) >= thresh_time:
+                    mask_topo[n, time_idx] = True
+                else:
+                    mask_topo[n, time_idx] = False
+        fig_topo=evok.plot_topomap(plot_times,outlines='head',scalings=1,units='T-value',average=averages,mask=mask_topo)
+    else:
+        fig_topo=evok.plot_topomap(plot_times,outlines='head',scalings=1,units='T-value',average=averages,mask=mask_thresh)
+        print('displaying sig points for only 1 selected central TF')
+    return fig_evo,fig_topo
 

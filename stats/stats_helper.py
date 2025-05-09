@@ -306,7 +306,7 @@ def get_tTest_picks(X, picks, FDR=False, plot_times='peaks', p_val=0.05,
     return ts, sig_value
 
 
-def get_tTest(X, label=None, FDR=False, plot_times='peaks',
+def get_tTest(X, label=None, FDR=False, plot_times='peaks',mask_BF=False,BF=False,
               averages=None, p_val=.05, report=None, crop_value=None, g_excl=None, png=None, topo_limits=[-7.5, 7.5]):
     '''
 
@@ -343,6 +343,8 @@ def get_tTest(X, label=None, FDR=False, plot_times='peaks',
     if FDR:
         reject_fdr, pval_fdr = fdr_correction(ps)
         sig_value = reject_fdr
+    elif BF:
+        sig_value=mask_BF> 10
     else:
         sig_value = ps < p_val
 
@@ -360,7 +362,7 @@ def get_tTest(X, label=None, FDR=False, plot_times='peaks',
     ax.set_yticks(y_ticks_loc)
     ax.set_yticklabels(y_ticks_lab_loc)
     if png != None:
-        fig_path = f'ana/results_report/images/t-tests/{png}'
+        fig_path = f'ana/deconvolution/figures/{png}'
         if not os.path.exists(fig_path):
             os.makedirs(fig_path)
         filenam = fig_path+f'/{png}_mass.svg'
@@ -376,12 +378,17 @@ def get_tTest(X, label=None, FDR=False, plot_times='peaks',
             # time filter is set to more than half of times
             duration_interval=len(np.where((np.logical_and(
                 time > plot_t-averages, time < plot_t+averages)))[0])
-            thresh_time = np.floor(len(np.where((np.logical_and(
-                time > plot_t-averages, time < plot_t+averages)))[0])/2)
+
+            thresh_time= 1
+            #thresh_time = np.floor(len(np.where((np.logical_and(
+            #    time > plot_t-averages, time < plot_t+averages)))[0])/2)
             print(
                 f'number of time pointst: {duration_interval}')
             print(
                 f'length of minimum time points to be significant: {thresh_time}')
+            if thresh_time==1:
+                print('at the moment if only one TF is significant the electrode will be displayed as sig')
+
 
             for n, line in enumerate(int_sig):
                 #possible time filter
@@ -489,7 +496,7 @@ def evoked_plot(evok_effect, tmin):
     return evok
 
 
-def tTest_ana(evoked, label=None, crop_value=None, FDR=False,
+def tTest_ana(evoked, label=None, crop_value=None, FDR=False,BF=False,mask_BF=None,
               plot_times='peaks', averages=None, p_val=.05,
               g_excl=None, report=None, png=None, perm=False, n_perm=1000,
               picks=None, plot_sig_lines=True, color='b', effect_size=False, axes=False, topo_limits=[-7.5, 7.5]):
@@ -546,7 +553,7 @@ def tTest_ana(evoked, label=None, crop_value=None, FDR=False,
 
     else:
         ts = get_tTest(X, label=label, FDR=FDR, plot_times=plot_times,
-                       averages=averages,
+                       averages=averages,BF=BF,mask_BF=mask_BF,
                        p_val=p_val, report=report, crop_value=crop_value,
                        g_excl=g_excl, png=png, topo_limits=topo_limits)
 
@@ -764,5 +771,28 @@ def Anovas_ana(evoked, effects_labels, crop_value=None, g_excl=None, factor_leve
                 fig=fig_topo, title=f'Anova {effects_labels[0]} X {effects_labels[1]}:  {effect_label} topoplot ', caption=caption2, image_format='svg')
 
     return report
+
+
+
+
+def plot_from_BF(X,plot_times='peaks',threshold=10,averages=None,log_trans=False):
+     mask_thresh= X>threshold
+     if log_trans:
+         X=np.log10(X)
+     biosemi_montage = mne.channels.make_standard_montage('biosemi128')
+     info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=256.,
+                            ch_types='eeg')
+     evok=mne.EvokedArray(X,info,tmin=-0.3)
+     evok.set_montage(biosemi_montage)
+
+
+     evok.plot_image(mask=mask_thresh,scalings=1,units='T-value',show_names='auto')
+     evok.plot_topomap(plot_times,outlines='head',scalings=1,units='T-value',average=averages,mask=mask_thresh)
+
+
+
+                                     #%%
+
+#%%
 
 #%%

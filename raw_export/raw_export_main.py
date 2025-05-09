@@ -9,13 +9,13 @@ import numpy as np
 
 if platform.system()=='Darwin':
     os.chdir('/Volumes/BBC/BBC/WP1/data/EEG/tsk/')
-    sys.path.append('/Users/leupinv/BBC/WP1/data/Code/python/BBC')
+    #sys.path.append('/Users/leupinv/BBC/WP1/data/Code/python/BBC')
     #if this doesn't work pound line right above this, restart the kernel, rerun the cell.
     #Then uncomment the same line and rerun
 
 else:
     #os.chdir('Z:/BBC/WP1/data/EEG/tsk')
-    sys.path.append('C:/Users/Vivi/switchdrive/BBC/WP1/data/Code/python/BBC')
+    #sys.path.append('C:/Users/Vivi/switchdrive/BBC/WP1/data/Code/python/BBC')
     os.chdir('Z:/BBC/WP1/data/EEG/tsk')
 from base.files_in_out import getListOfFiles,GetFiles
 import base.base_constants as b_cs
