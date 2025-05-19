@@ -307,7 +307,7 @@ def get_tTest_picks(X, picks, FDR=False, plot_times='peaks', p_val=0.05,
 
 
 def get_tTest(X, label=None, FDR=False, plot_times='peaks',mask_BF=False,BF=False,
-              averages=None, p_val=.05, report=None, crop_value=None, g_excl=None, png=None, topo_limits=[-7.5, 7.5]):
+              averages=None, p_val=.05, report=None, crop_value=None, g_excl=None, png=None, topo_limits=[-6, 6]):
     '''
 
 
@@ -351,6 +351,7 @@ def get_tTest(X, label=None, FDR=False, plot_times='peaks',mask_BF=False,BF=Fals
     # plot image (need to convert in evoked onject to do it)
     print(crop_value[0])
     evok = evoked_plot(ts, tmin=crop_value[0])
+
     #generate whole picture
     fig_evo = evok.plot_image(
         mask=sig_value, scalings=1, units='T-value', show_names='auto',
