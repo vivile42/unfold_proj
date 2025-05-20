@@ -33,7 +33,6 @@ for g_num in b_cs.G_N[3:]:
         if event_table.loc[i, "event"] == "vep" and event_table.loc[i - 1, "event"] == "hep":
             # Check if they are close in time (same trial)
             time_diff = event_table.loc[i, "time"] - event_table.loc[i - 1, "time"]
-            print(time_diff)
             if time_diff < 2:  # Adjust threshold as needed
                 hep_idx = i - 1
                 vep_idx = i

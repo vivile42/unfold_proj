@@ -56,8 +56,24 @@ def parse_annotations(raw):
             event_data["duration"].append(duration)
             event_data["card_phase"].append(card_phase)
             event_data["rsp_phase"].append(rsp_phase)
+    event_data=pd.DataFrame(event_data)
+    # Fix HEP cardiac phase to match the corresponding VEP phase (if different)
+    corrected_card_phases = event_data["card_phase"].copy()
+    # Loop over the event table to find hep-vep pairs
+    for i in range(1, len(event_data)):
+        if event_data.loc[i, "event"] == "vep" and event_data.loc[i - 1, "event"] == "hep":
+            # Check if they are close in time (same trial)
+            time_diff = event_data.loc[i, "time"] - event_data.loc[i - 1, "time"]
+            if time_diff < 2:  # Adjust threshold as needed
+                hep_idx = i - 1
+                vep_idx = i
+                # Update the HEP card_phase to match the VEP one
+                if event_data.loc[hep_idx, "card_phase"] != event_data.loc[vep_idx, "card_phase"]:
+                    corrected_card_phases[hep_idx] = event_data.loc[vep_idx, "card_phase"]
+    # Apply corrected phases
+    event_data["card_phase"] = corrected_card_phases
 
-    return filtered_onsets, filtered_durations, filtered_descriptions, pd.DataFrame(event_data)
+    return filtered_onsets, filtered_durations, filtered_descriptions, event_data
 
 def set_new_annotations(raw, onsets, durations, descriptions):
     new_annotations = mne.Annotations(onsets, durations, descriptions)
