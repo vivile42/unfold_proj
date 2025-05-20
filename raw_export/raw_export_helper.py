@@ -4,7 +4,7 @@ import pandas as pd
 
 def load_raw_data(g_num, datafolder='raw'):
     filepath = f"{datafolder}/{g_num}/{g_num}_n_tsk_ICA_rec-raw.fif"
-    raw = mne.io.read_raw_fif(filepath, preload=True)
+    raw = mne.io.read_raw_fif(filepath,preload=True)
     return raw
 
 def parse_annotations(raw):
