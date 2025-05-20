@@ -22,7 +22,7 @@ import base.base_constants as b_cs
 import raw_export.raw_export_helper as hp
 
 
-for g_num in b_cs.G_N[2:3]:
+for g_num in b_cs.G_N[3:]:
     raw = hp.load_raw_data(g_num)
     onsets, durations, descriptions, event_table = hp.parse_annotations(raw)
     event_table = event_table.sort_values(by="time").reset_index(drop=True)
