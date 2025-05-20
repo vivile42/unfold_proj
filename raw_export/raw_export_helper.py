@@ -33,8 +33,8 @@ def parse_annotations(raw):
         duration = annotations.duration[i]
 
         if "normal" in tags[1].lower() and "correct" in tags[2].lower():
-            if "hep" in tags[0].lower() and tags[-1] in ["RRCA", "RRCU"]:
-                awareness = "aware" if tags[-1] == "RRCA" else "unaware"
+            if "hep" in tags[0].lower() and tags[4] in ["R", "R2"]:
+                awareness = "aware" if tags[3] == "aware" else "unaware"
                 card_phase = "dia" if tags[-3] == "R2" else "sys"
                 rsp_phase = "inh" if tags[-2] == "inh" else "exh"
                 condition_name = "hep"
@@ -76,8 +76,8 @@ def save_outputs(new_raw, event_table, g_num, files_in_out):
     files.get_info(end_fix=29)
     files.current_filename = files.current_filename[:9]
 
-    output_file_eeg = files.out_filename(type_sig='deconv', file_end='eeg_data.set')
-    output_file_table = files.out_filename(type_sig='deconv', file_end='event_table.csv')
+    output_file_eeg = files.out_filename(type_sig='deconv', file_end='eeg_data_sys.set')
+    output_file_table = files.out_filename(type_sig='deconv', file_end='event_table_sys.csv')
 
     mne.export.export_raw(output_file_eeg, raw=new_raw, overwrite=True)
     event_table.to_csv(output_file_table, index=False)
