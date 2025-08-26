@@ -47,7 +47,14 @@ def define_period(region, phy_sig=None, cond=None):
 
     return crop_period
 
+def get_evo(data,tmin=-0.1):
+    biosemi_montage = mne.channels.make_standard_montage('biosemi128')
 
+    info = mne.create_info(ch_names=biosemi_montage.ch_names, sfreq=256.,
+                        ch_types='eeg')
+    evok=mne.EvokedArray(data,info,tmin=tmin)
+    evok.set_montage(biosemi_montage)
+    return evok
 def get_erp_df(evokeds, crop_period, picks_ERP):
     erp_df = {}
     for lab, cond in evokeds.items():
@@ -355,7 +362,7 @@ def get_tTest(X, label=None, FDR=False, plot_times='peaks',mask_BF=False,BF=Fals
     #generate whole picture
     fig_evo = evok.plot_image(
         mask=sig_value, scalings=1, units='T-value', show_names='auto',
-        clim=dict(eeg=[-6, 6])
+        clim=dict(eeg=[topo_limits[0],topo_limits[1]])
         )
     ax = plt.gca()
     y_ticks_loc = np.linspace(16, 112, 4)
@@ -405,7 +412,7 @@ def get_tTest(X, label=None, FDR=False, plot_times='peaks',mask_BF=False,BF=Fals
         vmax=topo_limits[1], mask_params=dict(markersize=5.5))
     if png != None:
         fig = plt.gcf()
-        filenam = fig_path+f'/{png}_topo.svg'
+        filenam = fig_path+f'/{png}_topo_{plot_times}.svg'
         fig.savefig(filenam, dpi=1200, transparent=True, format='svg')
 
     # add graphs to report to produce HTML only if label is present
