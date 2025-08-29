@@ -1,0 +1,186 @@
+---
+title: "Behavioral analyses"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, 
+
+#load libraries
+```{r}
+library("dplyr")
+library('lme4')
+library('lmerTest')
+library('arrow')
+require('flexplot')
+library("tidyverse")
+library('stats')
+library('fitdistrplus')
+library('emmeans')
+library('statmod')
+
+```
+
+
+
+#load data
+
+```{r}
+
+df<-arrow::read_feather('/Volumes/BBC/BBC/WP1/data/EEG/tsk/ana/deconvolution/behavioral/df_n_heps.feather')
+```
+
+```{r}
+df$g_num<-factor(df$g_num)
+df$awareness<-factor(df$awareness)
+
+
+```
+
+# check inverse distribution fit
+
+```{r}
+dinvgauss <- statmod::dinvgauss
+pinvgauss <- statmod::pinvgauss
+qinvgauss <- statmod::qinvgauss
+rinvgauss <- statmod::rinvgauss
+
+fit_inverse<-fitdist(df$RT,'invgauss',start=list(mean=5,shape=1))
+summary(fit_inverse)
+plot(fit_inverse)
+```
+# check lognorm
+```{r}
+
+
+fit_lnorm<-fitdist(df$RT,'lnorm')
+summary(fit_lnorm)
+plot(fit_lnorm)
+```
+
+
+
+```{r}
+
+df_hbc<-arrow::read_feather('/Volumes/BBC/BBC/WP1/data/EEG/tsk/ana/deconvolution/behavioral/df_n_heps_hbc.feather')
+```
+
+```{r}
+df_hbc$g_num<-factor(df_hbc$g_num)
+df_hbc$awareness<-factor(df_hbc$awareness)
+
+df_hbc <- df_hbc%>%
+  mutate(
+    h_per     = factor(h_per, levels = c(0, 1), labels = c("Low", "High")),
+  )
+```
+
+
+```{r}
+df_hbc$logRT=log(df_hbc$RT)
+glm_log<-lmer(logRT~awareness*h_per+(1|g_num), data=df_hbc)
+summary(glm_log)
+plot(glm_log)
+
+```
+
+
+
+```{r}
+#  emmeans
+library(emmeans)
+em <- emmeans(glm_log, ~ awareness * h_per)
+
+# level order
+as.data.frame(em)  
+
+# Contrast order  Aware-Low, Unaware-Low, Aware-High, Unaware-High)
+my_contrasts <- list(
+  "Aware vs Unaware (Low)"      = c(1, -1, 0, 0),
+  "Aware vs Unaware (High)"     = c(0,  0, 1, -1),
+  "Aware High vs Aware Low"     = c(-1, 0, 1, 0),
+  "Unaware High vs Unaware Low" = c(0, -1, 0, 1)
+)
+
+# contrasts
+contr <- contrast(em, method = my_contrasts, adjust = "holm")
+contr_df <- as.data.frame(contr)
+
+exp(summary(em)$emmean)
+```
+
+
+
+```{r}
+library(emmeans)
+em <- emmeans(glm_log, ~ awareness)
+exp(summary(em)$emmean)
+```
+
+
+```{r}
+# Calcola emmeans su logRT
+em_log <- emmeans(glm_log, ~ awareness)
+
+em_df <- as.data.frame(summary(em_log))  # NOTA: senza type="response" così hai i log
+
+# Back-transform (scala RT)
+em_df$RT_mean <- exp(em_df$emmean)
+em_df$RT_LCL <- exp(em_df$asymp.LCL)
+em_df$RT_UCL <- exp(em_df$asymp.UCL)
+em_df
+```
+
+
+
+```{r}
+library(ggplot2)
+library(emmeans)
+library(ggsignif)
+
+em_df <- as.data.frame(summary(em)) %>%
+  mutate(
+    emmean_exp = exp(emmean),
+    LCL = exp(asymp.LCL),
+    UCL = exp(asymp.UCL)
+  )
+
+subj_means <- df_hbc %>%
+  group_by(g_num, awareness) %>%
+  summarise(logRT = mean(log(RT)), .groups = "drop") %>%
+  mutate(RT_exp = exp(logRT))  # back-transform from logRT to RT
+
+ggplot(em_df, aes(x = awareness, y = emmean_exp, fill = awareness)) +
+  geom_bar(stat = "identity", width = 0.6, alpha = 0.9) +
+  geom_jitter(
+    data = subj_means,
+    aes(x = awareness, y = RT_exp, fill = awareness),
+    shape = 21, size = 2.5, stroke = 0.5,
+    color = "white", width = 0.1, alpha = 0.6
+  ) +
+  geom_errorbar(aes(ymin = LCL, ymax = UCL), width = 0.1, linewidth = 0.8,color = "black") +  # dopo!
+  scale_fill_manual(values = c("aware" = "gray20", "unaware" = "gray60")) +
+  labs(
+    y = "Estimated Reaction Time (ms)",
+    x = "Awareness",
+    title = "Estimated RT by Awareness (model-based)"
+  ) +
+  geom_signif(
+    comparisons = list(c("aware", "unaware")),
+    annotations = "***", # oppure "p < .001" o quello che preferisci
+    y_position = 950,     # posizione sopra la barra più alta
+    tip_length = 0.02,
+    textsize = 4
+  ) +
+  theme_minimal()
+
+
+
+```
+
+```{r}
+dir="/Volumes/BBC/BBC/WP1/data/EEG/tsk/ana/deconvolution/figures"
+setwd(dir)
+ggsave("estimated_RT_awareness.svg", width = 6, height = 4, dpi = 900, device = "svg")
+
+
+```

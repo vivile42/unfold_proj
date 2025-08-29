@@ -414,6 +414,22 @@ def get_tTest(X, label=None, FDR=False, plot_times='peaks',mask_BF=False,BF=Fals
         fig = plt.gcf()
         filenam = fig_path+f'/{png}_topo_{plot_times}.svg'
         fig.savefig(filenam, dpi=1200, transparent=True, format='svg')
+        filename_t=fig_path+f'/t_values_{png}.ep'
+
+        np.savetxt(filename_t,ts.T)
+        if FDR:
+            filename_p=fig_path+f'/p_values_FDR_{png}.ep'
+            np.savetxt(filename_p,pval_fdr.T)
+        elif BF:
+            pass
+        else:
+            filename_p=fig_path+f'/p_values_noc_{png}.ep'
+            np.savetxt(filename_p,ps.T)
+
+
+
+
+
 
     # add graphs to report to produce HTML only if label is present
     if FDR:

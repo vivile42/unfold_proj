@@ -1,0 +1,137 @@
+---
+title: "bayes_unfold_hbc"
+output: html_document
+date: "2025-08-14"
+---
+
+This is for the awafit 
+---
+```{r}
+cond_hbc='low'
+
+
+subject_list_high <- c('g01', 'g10', 'g12', 'g16', 'g23', 'g24',
+       'g28', 'g33', 'g34', 'g41', 'g42', 'g44', 'g45',
+       'g46', 'g49')  
+subject_list_low <- c( 'g03', 'g08', 'g11', 'g15', 'g17', 'g19', 
+       'g25', 'g32', 'g37', 'g38', 'g39', 'g40', 'g47', 'g51', 'g52')  
+
+if (cond_hbc == "high") {
+  subject_list <- subject_list_high
+} else if (cond_hbc == "low") {
+  subject_list <- subject_list_low
+}
+  
+  
+# Load one file to get time × electrode dimensions
+modtype="awafit"
+erp_type="hep"
+cond='awareness'
+dc_type="dc"
+dir="/Volumes/BBC/BBC/WP1/data/EEG/tsk/"
+setwd(dir)
+example_file <- paste0("ana/deconvolution/ep_betas/",modtype,"/",dc_type,"/", subject_list[1], "_aware_",erp_type,"__Intercept__",dc_type,".ep")
+example_data <- as.matrix(read.table(example_file))
+n_time <- nrow(example_data)
+n_elec <- ncol(example_data)
+n_subj <- length(subject_list)
+
+# Initialize array: subjects × time × electrodes
+X_awa <- array(NA, dim = c(n_subj, n_time, n_elec))
+
+# Load all files
+for (i in seq_along(subject_list)) {
+  file_path <- paste0("ana/deconvolution/ep_betas/",modtype,"/",dc_type,"/", subject_list[i], "_aware_",erp_type,"__Intercept__",dc_type,".ep")
+  X_awa[i, , ] <- as.matrix(read.table(file_path))
+}
+```
+
+```{r}
+# Initialize array: subjects × time × electrodes
+X_unawa <- array(NA, dim = c(n_subj, n_time, n_elec))
+setwd(dir)
+for (i in seq_along(subject_list)) {
+  file_path <- paste0("ana/deconvolution/ep_betas/",modtype,"/",dc_type,"/", subject_list[i], "_unaware_",erp_type,"__Intercept__",dc_type,".ep")
+  X_unawa[i, , ] <- as.matrix(read.table(file_path))
+}
+```
+
+
+```{r}
+X=X_awa-X_unawa
+rm(X_awa)
+rm(X_unawa)
+
+```
+
+```{r}
+X_perm <- aperm(X, c(3, 2, 1))  # now: electrodes × time × subject
+
+```
+
+```{r}
+library(BayesFactor)
+
+BF_matrix <- matrix(NA, nrow = dim(X_perm)[1], ncol = dim(X_perm)[2])  # electrode × time
+
+for (e in 1:dim(X_perm)[1]) {
+  for (t in 1:dim(X_perm)[2]) {
+    data_vector <- X_perm[e, t, ]
+    
+    # Check for variability (avoid error when all values are identical)
+    if (sd(data_vector) > 0) {
+      bf <- ttestBF(x = data_vector, mu = 0)
+      BF_matrix[e, t] <- exp(bf@bayesFactor$bf)
+    } else {
+      BF_matrix[e, t] <- NA
+    }
+  }
+}
+
+```
+
+
+```{r}
+# 1. Log Bayes Factor matrix
+log_BF <- log(BF_matrix)
+
+# 2. Thresholding
+threshold_3 <- ifelse(BF_matrix > 3, log(BF_matrix), NA)
+threshold_10 <- ifelse(BF_matrix > 10, log(BF_matrix), NA)
+
+```
+
+```{r}
+par(mfrow = c(1, 3))  # side-by-side plots
+
+
+
+# Uncorrected
+image(1:ncol(log_BF), 1:nrow(log_BF), t(log_BF),
+      main = "Log(BF) Uncorrected",
+      xlab = "Time", ylab = "Electrode",
+      col = topo.colors(100),
+      useRaster = TRUE)
+
+
+# Thresholded at BF > 3
+image(1:ncol(threshold_3), 1:nrow(threshold_3), t(threshold_3),
+      main = "BF > 3",
+      xlab = "Time", ylab = "Electrode",
+      col = topo.colors(100), useRaster = TRUE)
+
+# Thresholded at BF > 10
+image(1:ncol(threshold_10), 1:nrow(threshold_10), t(threshold_10),
+      main = "BF > 10",
+      xlab = "Time", ylab = "Electrode",
+      col = topo.colors(100), useRaster = TRUE)
+
+```
+```{r}
+# Save BF_matrix to a plain .txt file with numeric values
+setwd(dir)
+
+filename <- paste0("ana/deconvolution/stats/BF_matrix_",modtype,"_",erp_type,"_",cond,"_",dc_type,"_hbc_",cond_hbc,".ep")
+write.table(BF_matrix, file = filename, 
+            row.names = FALSE, col.names = FALSE)
+```

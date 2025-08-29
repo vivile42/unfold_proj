@@ -1,0 +1,152 @@
+---
+title: "ROI_unfold"
+output: html_document
+date: "2025-08-18"
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(lme4)
+library(lmerTest) 
+library(emmeans)
+library(performance)
+
+```
+
+
+```{r}
+# Load one file to get time × electrode dimensions
+
+dir="/Volumes/BBC/BBC/WP1/data/EEG/tsk/"
+setwd(dir)
+df <- read_csv("ana/deconvolution/stats/ROI_df_int.csv") %>%
+  mutate(across(where(is.character), as.factor))
+df <- df%>%
+  mutate(
+    h_per     = factor(h_per, levels = c(0, 1), labels = c("Low", "High")),
+  )
+
+```
+
+Divide into  w/o deconvolution 
+```{r}
+# Data for dc only
+df_dc <- df %>%
+  filter(dc == "dc")
+
+# Data for nodc only
+df_nodc <- df %>%
+  filter(dc == "nodc")
+```
+
+```{r}
+# Model change dc_front, dc_post and nodc to get respective models at the dc level and data=df_dc or data=df_nodc to get dc models
+m <- lmer(nodc ~ awareness * h_per + (1 | g_num), data = df_nodc)
+summary(m)
+#  emmeans
+library(emmeans)
+em <- emmeans(m, ~ awareness * h_per)
+
+# level order
+as.data.frame(em)  
+
+# Contrast order  Aware-Low, Unaware-Low, Aware-High, Unaware-High)
+my_contrasts <- list(
+  "Aware vs Unaware (Low)"      = c(1, -1, 0, 0),
+  "Aware vs Unaware (High)"     = c(0,  0, 1, -1),
+  "Aware High vs Aware Low"     = c(-1, 0, 1, 0),
+  "Unaware High vs Unaware Low" = c(0, -1, 0, 1)
+)
+
+# contrasts
+contr <- contrast(em, method = my_contrasts, adjust = "holm")
+contr_df <- as.data.frame(contr)
+
+# Cohen's d 
+sigma_model <- sigma(m)
+
+tab <- contr_df %>%
+  mutate(
+    Estimate = round(estimate, 3),
+    SE = round(SE, 3),
+    df = round(df, 1),
+    `p-value` = ifelse(p.value < .001, "< .001", sprintf("%.3f", p.value)),
+    `Cohen's d` = round(estimate / sigma_model, 2)
+  ) %>%
+  select(contrast, Estimate, SE, df, `p-value`, `Cohen's d`) %>%
+  rename(Contrasto = contrast)
+
+tab
+```
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(rlang)
+
+plot_two_by_dc_wide <- function(df, region_col, title_prefix = "Amplitude") {
+  # region_col is a string, e.g. "dc_post" or "dc_front" or "nodc"
+  d <- df %>%
+    mutate(
+      amplitude = .data[[region_col]],
+    )
+
+  summarise_stats <- function(x) {
+    x %>%
+      group_by(h_per, awareness) %>%
+      summarise(
+        n        = dplyr::n(),
+        mean_amp = mean(amplitude, na.rm = TRUE),
+        se       = sd(amplitude,   na.rm = TRUE) / sqrt(n),
+        .groups  = "drop"
+      )
+  }
+
+  pd <- position_dodge(width = 0.6)
+
+  make_plot <- function(sub, dc_label){
+    sum_df <- summarise_stats(sub)
+    ggplot(sum_df, aes(x = h_per, y = mean_amp, fill = awareness)) +
+      geom_col(width = 0.5, position = pd) +
+      geom_errorbar(aes(ymin = mean_amp - se, ymax = mean_amp + se),
+                    width = 0.15, position = pd, size = 0.9) +
+        # individual subject points
+      geom_point(data = sub,
+                 aes(x = h_per, y = amplitude, fill = awareness),
+                 position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.6),
+                 shape = 21, color = "black", size = 2, alpha = 0.5) +
+      scale_fill_manual(values = c("aware" = "grey25", "unaware" = "grey70"),
+                        name = "Awareness") +
+      labs(x = "Interoceptive performance",
+           y = "Amplitude (µV)",
+           title = sprintf("%s — %s — %s", title_prefix, region_col, dc_label)) +
+      theme_bw(base_size = 14)
+  }
+
+  p_dc   <- make_plot(d %>% filter(dc == "dc"),   "dc")
+  p_nodc <- make_plot(d %>% filter(dc == "nodc"), "nodc")
+
+  list(dc = p_dc, nodc = p_nodc)
+}
+```
+
+```{r}
+
+region='nodc'
+plots <- plot_two_by_dc_wide(df, region_col = region)
+print(plots$dc)
+print(plots$nodc)
+
+```
+
+
+```{r}
+dir="/Volumes/BBC/BBC/WP1/data/EEG/tsk/ana/deconvolution/figures"
+setwd(dir)
+ggsave(paste0("amp_",region,"_dc.svg"),plots$dc ,width = 6, height = 4, dpi = 900, device = "svg")
+ggsave(paste0("amp_",region,"_nodc.svg"),plots$nodc ,width = 6, height = 4, dpi = 900, device = "svg")
+
+```
